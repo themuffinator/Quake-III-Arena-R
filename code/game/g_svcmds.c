@@ -176,13 +176,11 @@ G_FilterPacket
 */
 qboolean G_FilterPacket (char *from)
 {
-	int		i;
-	unsigned	in;
-	byte m[4];
-	char *p;
+	int	i = 0;
+	byte m[4] = { 0,0,0,0 };
+	unsigned in = *(unsigned*)m;
+	char *p = from;
 
-	i = 0;
-	p = from;
 	while (*p && i < 4) {
 		m[i] = 0;
 		while (*p >= '0' && *p <= '9') {
@@ -193,12 +191,12 @@ qboolean G_FilterPacket (char *from)
 			break;
 		i++, p++;
 	}
-	
-	in = *(unsigned *)m;
 
-	for (i=0 ; i<numIPFilters ; i++)
-		if ( (in & ipFilters[i].mask) == ipFilters[i].compare)
+	for (i = 0; i < numIPFilters; i++) {
+		if ((in & ipFilters[i].mask) == ipFilters[i].compare) {
 			return g_filterBan.integer != 0;
+		}
+	}
 
 	return g_filterBan.integer == 0;
 }
