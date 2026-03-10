@@ -40,8 +40,16 @@ set(CMAKE_SUPPRESS_REGENERATION true)
 if(WIN32)
 	IF(MSVC)
 		message(STATUS "Setting MSVC flags")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /EHc /std:clatest")
+		add_compile_options(/W0)
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc>)
+		add_compile_options($<$<COMPILE_LANGUAGE:C>:/wd4013> $<$<COMPILE_LANGUAGE:C>:/wd4133>)
+	ELSE()
+		add_compile_options(-w -Wno-error=implicit-function-declaration -Wno-implicit-function-declaration)
 	ENDIF(MSVC)
+
+	# Some legacy code paths check WIN32 instead of _WIN32 and
+	# MSVC deprecation noise is expected for this codebase.
+	add_compile_definitions(WIN32 _CRT_SECURE_NO_WARNINGS)
 	
 	# check Vulkan
 	find_package(Vulkan REQUIRED)

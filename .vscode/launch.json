@@ -1,0 +1,57 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch quake3 (Debug)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/Debug/quake3.exe",
+      "args": [
+        "+set",
+        "fs_basePath",
+        "C:\\GOG Games\\Quake III",
+        "+set",
+        "sv_pure",
+        "0",
+        "+set",
+        "vm_game",
+        "0",
+        "+set",
+        "vm_cgame",
+        "0",
+        "+set",
+        "vm_ui",
+        "0"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build Debug"
+    },
+    {
+      "name": "Launch quake3 (Release)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/Release/quake3.exe",
+      "args": [
+        "+set",
+        "fs_basePath",
+        "C:\\GOG Games\\Quake III",
+        "+set",
+        "sv_pure",
+        "0",
+        "+set",
+        "vm_game",
+        "0",
+        "+set",
+        "vm_cgame",
+        "0",
+        "+set",
+        "vm_ui",
+        "0"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build Release"
+    }
+  ]
+}
