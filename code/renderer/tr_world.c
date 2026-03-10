@@ -302,7 +302,7 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
 	
 	R_AddDrawSurf( surf->data, surf->shader, surf->fogIndex, dlightBits, surf->bAS);
 	// We don't want to draw mirrors or portals in an extra pass, so we extract those informations
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && !tr.viewParms.isPortal) {
+	if (R_RTX_ENABLED() && !tr.viewParms.isPortal) {
 		if (surf->shader->sort == SS_PORTAL) {
 			R_SetupProjection();
 			int index = (tr.refdef.numDrawSurfs-1) & DRAWSURF_MASK;
@@ -345,10 +345,10 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 	for ( i = 0 ; i < bmodel->numSurfaces ; i++ ) {
 		msurface_t* surf = (bmodel->firstSurface + i);
 		// create bas for world entity if not yet done
-		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && surf->bAS == NULL) continue;
+		if (R_RTX_ENABLED() && surf->bAS == NULL) continue;
 		if (surf->bAS != NULL) surf->bAS->surfcount = i;
 		//if (surf->bAS == NULL && !surf->added && !surf->skip
-		//	&& glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+		//	&& R_RTX_ENABLED()) {
 		//	vk_d.scratchBufferOffset = 0;
 		//	tess.numVertexes = 0;
 		//	tess.numIndexes = 0;

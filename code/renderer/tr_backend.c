@@ -721,10 +721,10 @@ const void	*RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && !backEnd.viewParms.isPortal && backEnd.refdef.rdflags != RDF_NOWORLDMODEL) {
+	if (R_RTX_ENABLED() && !backEnd.viewParms.isPortal && backEnd.refdef.rdflags != RDF_NOWORLDMODEL) {
 		RB_RayTraceScene(cmd->drawSurfs, cmd->numDrawSurfs);
 	}
-	else if(r_vertexLight->value != 2 || backEnd.refdef.rdflags == RDF_NOWORLDMODEL) RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+	else if(!R_RTX_ENABLED() || backEnd.refdef.rdflags == RDF_NOWORLDMODEL) RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 
 	return (const void *)(cmd + 1);
 }

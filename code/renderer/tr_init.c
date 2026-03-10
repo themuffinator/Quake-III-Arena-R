@@ -139,6 +139,23 @@ cvar_t	*r_simpleMipMaps;
 
 cvar_t	*r_showImages;
 
+static void R_FillFallbackBlueNoiseSlice(uint16_t *dst, size_t pixelCount, uint32_t seed) {
+	uint32_t state = seed * 747796405u + 2891336453u;
+	size_t i;
+
+	for (i = 0; i < pixelCount; ++i) {
+		// Simple stable hash sequence; quality is lower than offline blue-noise assets
+		// but good enough to avoid startup failure when assets are missing.
+		state ^= state >> 16;
+		state *= 0x7feb352du;
+		state ^= state >> 15;
+		state *= 0x846ca68bu;
+		state ^= state >> 16;
+		dst[i] = (uint16_t)state;
+		state += 0x9e3779b9u;
+	}
+}
+
 cvar_t	*r_ambientScale;
 cvar_t	*r_directedScale;
 cvar_t	*r_debugLight;
@@ -287,7 +304,7 @@ static void InitVulkan(void)
 		vk_d.mipmapLevel = 1 + floor(log2(max(vk.swapchain.extent.width, vk.swapchain.extent.height)));
 
 		// <RTX>
-		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+		if (R_RTX_ENABLED()) {
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				// gbuffer
 				VK_CreateImage(&vk_d.gBuffer[i].position, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
@@ -524,13 +541,11 @@ static void InitVulkan(void)
 		
 		
 			// load blue noise
-			const int num_blue_noise_images = NUM_BLUE_NOISE_TEX;
-			const int resolution = BLUE_NOISE_RES;
-			const size_t img_size = (size_t)resolution * (size_t)resolution;
-			const size_t total_size = img_size * sizeof(uint16_t);
+			const size_t imgSize = (size_t)BLUE_NOISE_RES * (size_t)BLUE_NOISE_RES;
+			const uint32_t bytesPerChannel = sizeof(uint16_t);
+			qboolean warnedBlueNoiseFallback = qfalse;
 
 			int		width, height;
-			int		bytes_per_channel = 2;
 			byte* pic;
 			VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R16_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
 			for (int i = 0; i < NUM_BLUE_NOISE_TEX/4; i++) {
@@ -541,14 +556,34 @@ static void InitVulkan(void)
 				//snprintf(buf, sizeof buf, "blue_noise_textures/256_256/HDR_RGBA_%04d.png", i);
 				R_LoadImage16(buf, &pic, &width, &height);
 
-				// HDR is RGBA
-				for (int channel = 0; channel < 4; channel++) {
-					uint8_t img[2 * BLUE_NOISE_RES * BLUE_NOISE_RES];
-					for (int j = 0; j < img_size; j++) {
-						img[(j * bytes_per_channel) + 0] = *(pic + ((j * 8) + ((channel * bytes_per_channel) + 0)));
-						img[(j * bytes_per_channel) + 1] = *(pic + ((j * 8) + ((channel * bytes_per_channel) + 1)));
+				if (!pic || width != BLUE_NOISE_RES || height != BLUE_NOISE_RES) {
+					if (!warnedBlueNoiseFallback) {
+						ri.Printf(PRINT_WARNING, "RTX: blue-noise textures missing/invalid (first failed file '%s', got %dx%d). Using procedural fallback.\n", buf, width, height);
+						warnedBlueNoiseFallback = qtrue;
 					}
-					VK_UploadImageData(&vk_d.blueNoiseTex, width, height, &img, bytes_per_channel, 0, (i*4) + channel);
+
+					for (int channel = 0; channel < 4; channel++) {
+						uint16_t img[BLUE_NOISE_RES * BLUE_NOISE_RES];
+						R_FillFallbackBlueNoiseSlice(img, imgSize, ((uint32_t)i << 2) + (uint32_t)channel);
+						VK_UploadImageData(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, (const uint8_t*)img, bytesPerChannel, 0, (i * 4) + channel);
+					}
+					if (pic) {
+						ri.Free(pic);
+					}
+					continue;
+				}
+
+				{
+					const uint16_t* src = (const uint16_t*)pic;
+
+					// HDR pngs are loaded as interleaved RGBA16.
+					for (int channel = 0; channel < 4; channel++) {
+						uint16_t img[BLUE_NOISE_RES * BLUE_NOISE_RES];
+						for (size_t j = 0; j < imgSize; j++) {
+							img[j] = src[(j * 4) + (size_t)channel];
+						}
+						VK_UploadImageData(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, (const uint8_t*)img, bytesPerChannel, 0, (i * 4) + channel);
+					}
 				}
 				ri.Free(pic);
 			}
@@ -1266,7 +1301,7 @@ void R_Register( void )
 	//
 	// latched and archived variables
 	//
-	r_glDriver = ri.Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE | CVAR_LATCH );
+	r_glDriver = ri.Cvar_Get( "r_glDriver", VULKAN_DRIVER_NAME, CVAR_ARCHIVE | CVAR_LATCH );
 	r_allowExtensions = ri.Cvar_Get( "r_allowExtensions", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ext_compressed_textures = ri.Cvar_Get( "r_ext_compressed_textures", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ext_gamma_control = ri.Cvar_Get( "r_ext_gamma_control", "1", CVAR_ARCHIVE | CVAR_LATCH );
@@ -1297,7 +1332,7 @@ void R_Register( void )
 	r_customaspect = ri.Cvar_Get( "r_customaspect", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_simpleMipMaps = ri.Cvar_Get( "r_simpleMipMaps", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_vertexLight = ri.Cvar_Get( "r_vertexLight", "0", CVAR_ARCHIVE | CVAR_LATCH );
-	r_rtx = ri.Cvar_Get("r_rtx", "0", CVAR_ARCHIVE | CVAR_LATCH);
+	r_rtx = ri.Cvar_Get("r_rtx", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_uiFullScreen = ri.Cvar_Get( "r_uifullscreen", "0", 0);
 	r_subdivisions = ri.Cvar_Get ("r_subdivisions", "4", CVAR_ARCHIVE | CVAR_LATCH);
 	
@@ -1514,6 +1549,11 @@ void R_Init( void ) {
 
 	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) InitOpenGL();
 	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) InitVulkan();
+
+	ri.Printf(PRINT_ALL, "RTX path: %s (r_rtx=%d, r_vertexLight=%d)\n",
+		R_RTX_ENABLED() ? "enabled" : "disabled",
+		r_rtx ? r_rtx->integer : 0,
+		r_vertexLight ? r_vertexLight->integer : 0);
 
 	R_InitImages();
 

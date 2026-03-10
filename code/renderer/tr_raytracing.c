@@ -2,7 +2,7 @@
 #include "../../shader/glsl/constants.h"
 
 /*
-glConfig.driverType == VULKAN && r_vertexLight->value == 2
+R_RTX_ENABLED()
 */
 
 #define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV)

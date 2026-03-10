@@ -32,16 +32,35 @@ static qboolean W_CreateWindow(const char* drivername, int width, int height, in
 	qboolean cdsFullscreen)
 {
 	rserr_t err;
+	const int safeMode = 3;
 
-	err = W_SetMode(drivername, r_mode->integer, colorbits, cdsFullscreen);
+	err = W_SetMode(drivername, mode, colorbits, cdsFullscreen);
 
 	switch (err)
 	{
 	case RSERR_INVALID_FULLSCREEN:
 		ri.Printf(PRINT_ALL, "...WARNING: fullscreen unavailable in this mode\n");
-		return qfalse;
+		// W_SetMode already created a windowed fallback path in this case.
+		ri.Cvar_Set("r_fullscreen", "0");
+		return qtrue;
 	case RSERR_INVALID_MODE:
 		ri.Printf(PRINT_ALL, "...WARNING: could not set the given mode (%d)\n", mode);
+		if (mode != safeMode)
+		{
+			ri.Printf(PRINT_ALL, "...WARNING: trying safe mode (%d)\n", safeMode);
+			ri.Cvar_Set("r_mode", "3");
+			err = W_SetMode(drivername, safeMode, colorbits, cdsFullscreen);
+			if (err == RSERR_OK)
+			{
+				return qtrue;
+			}
+			if (err == RSERR_INVALID_FULLSCREEN)
+			{
+				ri.Printf(PRINT_ALL, "...WARNING: fullscreen unavailable in safe mode, using windowed\n");
+				ri.Cvar_Set("r_fullscreen", "0");
+				return qtrue;
+			}
+		}
 		return qfalse;
 	default:
 		break;
@@ -413,4 +432,3 @@ static void PrintCDSError(int value)
 		break;
 	}
 }
-

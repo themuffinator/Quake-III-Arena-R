@@ -2738,7 +2738,9 @@ FS_Startup
 ================
 */
 static void FS_Startup( const char *gameName ) {
-        const char *homePath;
+	const char *basePathDefault;
+	const char *basePathOverride;
+	const char *homePath;
 	cvar_t	*fs;
 
 	Com_Printf( "----- FS_Startup -----\n" );
@@ -2746,10 +2748,16 @@ static void FS_Startup( const char *gameName ) {
 	fs_debug = Cvar_Get( "fs_debug", "0", 0 );
 	fs_copyfiles = Cvar_Get( "fs_copyfiles", "0", CVAR_INIT );
 	fs_cdpath = Cvar_Get ("fs_cdpath", Sys_DefaultCDPath(), CVAR_INIT );
-	fs_basepath = Cvar_Get ("fs_basepath", Sys_DefaultInstallPath(), CVAR_INIT );
+	basePathOverride = Cvar_VariableString("fs_basepath");
+	if (basePathOverride && basePathOverride[0]) {
+		basePathDefault = basePathOverride;
+	} else {
+		basePathDefault = Sys_DefaultInstallPath();
+	}
+	fs_basepath = Cvar_Get ("fs_basepath", basePathDefault, CVAR_INIT );
 	fs_basegame = Cvar_Get ("fs_basegame", "", CVAR_INIT );
-  homePath = Sys_DefaultHomePath();
-  if (!homePath || !homePath[0]) {
+	homePath = Sys_DefaultHomePath();
+	if (!homePath || !homePath[0]) {
 		homePath = fs_basepath->string;
 	}
 	fs_homepath = Cvar_Get ("fs_homepath", homePath, CVAR_INIT );

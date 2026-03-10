@@ -828,7 +828,7 @@ static void GLW_StartOpenGL( void )
 	//
 	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
 	{
-		/*if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
+		if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
 		{
 			attemptedOpenGL32 = qtrue;
 		}
@@ -836,16 +836,16 @@ static void GLW_StartOpenGL( void )
 		if ( !attemptedOpenGL32 )
 		{
 			attemptedOpenGL32 = qtrue;
+			ri.Printf( PRINT_ALL, "...retrying OpenGL with '%s'\n", OPENGL_DRIVER_NAME );
 			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
 			{
 				ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
 				r_glDriver->modified = qfalse;
+				return;
 			}
-			else*/
-			{
-				ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
-			}
-		//}
+		}
+
+		ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 	}
 }
 

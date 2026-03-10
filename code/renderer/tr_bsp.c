@@ -3304,7 +3304,7 @@ void RE_LoadWorldMap( const char *name ) {
 	R_LoadLightGrid( &header->lumps[LUMP_LIGHTGRID] );
 
 	// RTX
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+	if (R_RTX_ENABLED()) {
 		R_PreparePT();
 	}
 

@@ -182,18 +182,49 @@ static void VK_PickPhysicalDevice()
 {
 	{
 		uint32_t deviceCount = 0;
+		int bestScore = -1;
+		vkqueueFamilyIndices_t bestIndices;
 		vkEnumeratePhysicalDevices(vk.instance, &deviceCount, NULL);
 		if (deviceCount == 0) {
 			ri.Error(ERR_FATAL, "Vulkan: failed to find GPUs with Vulkan support!");
 		}
+		if (deviceCount > 10) {
+			deviceCount = 10;
+		}
 		VkPhysicalDevice devices[10];
 		vkEnumeratePhysicalDevices(vk.instance, &deviceCount, &devices[0]);
+		bestIndices.graphicsFamily = -1;
+		bestIndices.presentFamily = -1;
 
 		for (int i = 0; i < deviceCount; i++) {
 			if (VK_IsDeviceSuitable(devices[i], vk.surface)) {
-				vk.physicalDevice = devices[i];
-				break;
+				int score;
+				VkPhysicalDeviceProperties properties;
+				vkqueueFamilyIndices_t indices;
+				vkGetPhysicalDeviceProperties(devices[i], &properties);
+				indices = vk.queryFamilyIndices;
+
+				score = (int)properties.limits.maxImageDimension2D;
+				if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+					score += 100000;
+				}
+				else if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+					score += 10000;
+				}
+				else {
+					score += 1000;
+				}
+
+				if (score > bestScore) {
+					bestScore = score;
+					vk.physicalDevice = devices[i];
+					bestIndices = indices;
+				}
 			}
+		}
+
+		if (vk.physicalDevice != VK_NULL_HANDLE) {
+			vk.queryFamilyIndices = bestIndices;
 		}
 	}
 

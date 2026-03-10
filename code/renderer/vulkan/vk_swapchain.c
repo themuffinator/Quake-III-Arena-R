@@ -395,7 +395,9 @@ void VK_EndFrame()
 	//int next = (vk.swapchain.currentFrame + 1) % vk.swapchain.imageCount;
 	VkSemaphore waitSemaphores[] = { vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame]};
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	VkSemaphore signalSemaphores[] = { vk.swapchain.renderFinishedSemaphores[vk.swapchain.currentFrame] };
+	// Signal semaphore must track the acquired swapchain image. If it is indexed
+	// by frame index, it can be reused while still pending in vkQueuePresentKHR.
+	VkSemaphore signalSemaphores[] = { vk.swapchain.renderFinishedSemaphores[vk.swapchain.currentImage] };
 	//(vk.swapchain.currentFrame + 1) % vk.swapchain.imageCount
 	VkSubmitInfo submitInfo = { 0 };
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

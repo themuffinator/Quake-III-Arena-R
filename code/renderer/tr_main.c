@@ -1461,7 +1461,7 @@ void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	// sort the drawsurfs by sort type, then orientation, then shader
 	qsortFast (drawSurfs, numDrawSurfs, sizeof(drawSurf_t) );
 
-	if (r_vertexLight->value != 2) {
+	if (!R_RTX_ENABLED()) {
 		// check for any pass through drawing, which
 		// may cause another view to be rendered first
 		for (i = 0; i < numDrawSurfs; i++) {
@@ -1587,7 +1587,7 @@ R_GenerateDrawSurfs
 ====================
 */
 void R_GenerateDrawSurfs( void ) {
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && tr.refdef.rdflags != RDF_NOWORLDMODEL) {
+	if (R_RTX_ENABLED() && tr.refdef.rdflags != RDF_NOWORLDMODEL) {
 		if (!r_lockpvs->integer) {
 			vk_d.currentCluster = R_FindClusterForPos2(tr.viewParms.pvsOrigin);
 			if (r_showcluster->integer) ri.Printf(PRINT_ALL, "cluster:%i\n", vk_d.currentCluster);
@@ -1682,7 +1682,7 @@ void R_RenderView (viewParms_t *parms) {
 
 	tr.viewCount++;
 
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) r_nocull->integer = 1;
+	if (R_RTX_ENABLED()) r_nocull->integer = 1;
 	// set viewParms.world
 	R_RotateForViewer ();
 
@@ -1690,7 +1690,7 @@ void R_RenderView (viewParms_t *parms) {
 
 	R_GenerateDrawSurfs();
 	//r_nocull->integer = 0;
-	//if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+	//if (R_RTX_ENABLED()) {
 	//	if (vk_d.portalInView) {
 	//		// set position to cull position and then back to actual view position
 	//		float x = vk_d.portalViewParms. or .origin[0];
@@ -1735,6 +1735,4 @@ void R_RenderView (viewParms_t *parms) {
 	// draw main system development information (surface outlines, etc)
 	R_DebugGraphics();
 }
-
-
 

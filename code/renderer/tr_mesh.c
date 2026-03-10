@@ -303,7 +303,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 	//
 	// compute LOD
 	//
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) lod = 0;
+	if (R_RTX_ENABLED()) lod = 0;
 	else lod = R_ComputeLOD(ent);
 
 	header = tr.currentModel->md3[lod];
@@ -369,7 +369,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		if(lod > 0) ri.Printf(PRINT_ERROR, "RTX: Lod should be 0\n");
 
 		// create bas for entity if not yet done
-		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+		if (R_RTX_ENABLED()) {
 			if (tr.currentModel->bAS[lod][i] == NULL){
 				vk_d.scratchBufferOffset = 0;
 				tess.numVertexes = 0;
@@ -412,7 +412,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		}
 
 		// don't add third_person objects if not viewing through a portal
-		if ( !personalModel || (glConfig.driverType == VULKAN && r_vertexLight->value == 2)) {
+		if ( !personalModel || R_RTX_ENABLED()) {
 			R_AddDrawSurf( (void *)surface, shader, fogNum, qfalse, tr.currentModel->bAS[lod][i]);
 		}
 

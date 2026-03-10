@@ -2024,7 +2024,7 @@ static shader_t *GeneratePermanentShader( void ) {
 	hashTable[hash] = newShader;
 
 	// RT: fix shader errors
-	if ((r_vertexLight->integer == 2)) {
+	if (R_RTX_ENABLED()) {
 		if ((strstr(newShader->name, "gratelamp/gratelamp") && !strstr(newShader->name, "gratelamp/gratelamp_b")) || (strstr(newShader->name, "gratelamp/gratetorch2b")) || (strstr(newShader->name, "timlamp/timlamp"))) {
 			newShader->contentFlags |= CONTENTS_TRANSLUCENT;
 		}
@@ -2350,7 +2350,7 @@ static shader_t *FinishShader( void ) {
 	}
 
 	// copy stages to rt stages
-	if ((r_vertexLight->integer == 2)) Com_Memcpy(rtstages, stages, sizeof(stages));
+	if (R_RTX_ENABLED()) Com_Memcpy(rtstages, stages, sizeof(stages));
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
 	//
@@ -2358,14 +2358,14 @@ static shader_t *FinishShader( void ) {
 		VertexLightingCollapse();
 		stage = 1;
 		hasLightmapStage = qfalse;
-	} else if (stage > 1 && (r_vertexLight->integer == 2 && !r_uiFullScreen->integer)) {
+	} else if (stage > 1 && (R_RTX_ENABLED() && !r_uiFullScreen->integer)) {
 		PathTracingsCollapse();
 	}
 
 	//
 	// look for multitexture potential
 	//
-	if (r_vertexLight->integer != 2 && stage > 1 && CollapseMultitexture() ) {
+	if (!R_RTX_ENABLED() && stage > 1 && CollapseMultitexture() ) {
 		stage--;
 	}
 
